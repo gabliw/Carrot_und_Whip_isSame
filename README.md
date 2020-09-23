@@ -1,2 +1,2 @@
-# Carrot_und_Whip_isSame
-combine GAN Techniques for me
+# NaNet
+200923 GAN Project
