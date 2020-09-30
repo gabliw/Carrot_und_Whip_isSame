@@ -31,7 +31,7 @@ batch_size = 100
 learning_rate = 0.001
 
 # MNIST dataset
-train_dataset = torchvision.datasets.MNIST(root='../../data',
+train_dataset = torchvision.datasets.ImageNet(root='../../data',
                                            train=True,
                                            transform=transforms.ToTensor(),
                                            download=True)
