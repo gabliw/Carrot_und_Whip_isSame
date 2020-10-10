@@ -1,5 +1,5 @@
 {
-  "_comment": "celebA dataset configuration json file for GAN Project",
+  "_comment": "reference config json file Contributed by Winterchild",
   "dataset": {
     "type": "RTGENE",
     "args": {
