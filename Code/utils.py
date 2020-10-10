@@ -4,17 +4,23 @@ HShake (https://github.com/gabliw)
 
 import os
 import json
+import urllib.request as request
+
+
+def known_url_crawling(url_list):
+    NotImplemented
+    request.urlretrieve(url_list, "../Dataset/not_refine/test.jpg")
 
 
 # image file rename function
 def rename(target_dir):
-    files = [os.path.join(target_dir, file) for file in os.listdir(target_dir)]
+    from shutil import copy
+    files = sorted([os.path.join(target_dir, file) for file in os.listdir(target_dir)])
 
-    for idx, file in enumerate(sorted(files)):
-
+    for idx, file in enumerate(files[1:]):
         file_name = f"{idx + 1:03d}.png"
         print(file_name)
-        os.rename(os.path.join(target_dir, file), os.path.join(target_dir, file_name))
+        copy(file, os.path.join('../Dataset/target', file_name))
 
 
 # Contributed with Winterchild

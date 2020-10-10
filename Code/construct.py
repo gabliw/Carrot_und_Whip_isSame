@@ -17,8 +17,8 @@ import torchvision.transforms as transforms
 
 # import datasets
 # import modules
-import config
-import utils
+# import config
+# import utils
 
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
