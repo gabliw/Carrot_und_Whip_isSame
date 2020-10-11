@@ -1,15 +1,112 @@
 """
 HShake (https://github.com/gabliw)
 """
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from bs4 import BeautifulSoup
+import requests
 
 import os
+import time
+import datetime as dt
+import shutil
 import json
-import urllib.request as request
 
 
-def known_url_crawling(url_list):
+def knwon_url_crawling(url_list):
     NotImplemented
-    request.urlretrieve(url_list, "../Dataset/not_refine/test.jpg")
+
+
+def unknown_url_crawling(target_keywords, isfeed):
+    tnum = 0
+    for num, target in enumerate(target_keywords):
+        save_dir = '../Dataset/not_refine'
+        options = webdriver.ChromeOptions()
+        mobile_emulation = {
+            "deviceMetrics": {"width": 375, "height": 812, "pixelRatio": 3.0},
+            "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19"
+                         " (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19"
+        }
+        options.add_experimental_option("mobileEmulation", mobile_emulation)
+        options.add_argument('headless')
+        options.add_argument('window-size=1920x1080')
+        options.add_argument("disable-gpu")
+
+        driver = webdriver.Chrome("/Users/noble/workspace/NaNet/Dataset/chromedriver", chrome_options=options)
+        driver.implicitly_wait(5)
+
+        if isfeed is True:
+            driver_dir = f"https://www.instagram.com/{target}/feed"
+            driver.get(driver_dir)
+        else:
+            driver_dir = f"https://www.instagram.com/explore/tags/{target}"
+            driver.get(driver_dir)
+        time.sleep(3)
+
+
+        img_list = []
+        time_count = 0
+        exit_count = 0
+        exit_point = 0
+        previous_state = False
+        while True:
+            soup = BeautifulSoup(driver.page_source, 'html5lib')
+            img = soup.select("img[srcset]")
+            img_list += img
+            img_list = list(set(img_list))
+            time_count += 1
+            if time_count == 50 and len(img_list) == 0:
+                break
+            if previous_state is False and len(img_list) != 0:
+                previous_state = True
+                exit_point = len(img_list)
+            if exit_count == 50:
+                break
+            if exit_point == len(img_list):
+                exit_count += 1
+            else:
+                exit_point = len(img_list)
+                exit_count = 0
+            print(f"[{target}]keyword, {time_count + 1} page: {len(img)} collect, {len(img_list)} collected, "
+                  f"{driver_dir}")
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1)
+
+        src_list = []
+        for t in img_list:
+            srcset = t.attrs['srcset']
+            srcset_list = srcset.split(",")
+            item = srcset_list[len(srcset_list) - 1]
+            url = item[:item.find(" ")]
+            src_list.append(url)
+
+        src_list = list(set(src_list))
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)" \
+                     " Chrome/77.0.3865.120 Safari/537.36"
+        session = requests.Session()
+        session.headers.update({'User-agent': user_agent, 'referer': None})
+
+        count = 0
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        for image_url in src_list:
+            count += 1
+            path = f"{save_dir}/ {tnum + count}.png"
+
+            try:
+                r = session.get(image_url, stream=True)
+                if r.status_code != 200:
+                    raise Exception
+
+                with open(path, 'wb') as f:
+                    f.write(r.raw.read())
+                    print(f"save completed : {path}")
+            except:
+                print(f"failed in {path}")
+                continue
+
+        tnum += count
 
 
 # image file rename function
