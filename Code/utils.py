@@ -8,16 +8,79 @@ import requests
 
 import os
 import time
+import csv
 import datetime as dt
 import shutil
 import json
 
 
-def knwon_url_crawling(url_list):
+def tumblr_crawling(url):
     NotImplemented
 
 
-def unknown_url_crawling(target_keywords, isfeed):
+def csv_loader(csv_dir):
+    result = []
+    with open(f'../Dataset/Raw_source/{csv_dir}', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+        for row in reader:
+            result.append(row[0])
+    return result
+
+
+def instagram_url_crawling(url_list):
+    save_dir = '../Dataset/not_refine'
+    options = webdriver.ChromeOptions()
+    mobile_emulation = {
+        "deviceMetrics": {"width": 375, "height": 812, "pixelRatio": 3.0},
+        "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19"
+                     " (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19"
+    }
+    options.add_experimental_option("mobileEmulation", mobile_emulation)
+    options.add_argument('headless')
+    options.add_argument('window-size=1920x1080')
+    options.add_argument("disable-gpu")
+
+    driver = webdriver.Chrome("/Users/noble/workspace/NaNet/Dataset/chromedriver", chrome_options=options)
+    driver.implicitly_wait(5)
+
+    img_list = []
+    for i, target in enumerate(url_list):
+        driver_dir = target
+        driver.get(driver_dir)
+
+        soup = BeautifulSoup(driver.page_source, 'html5lib')
+        img = soup.select("img")
+        print(f"URL: {target}")
+
+        srcset = img[1].attrs['src']
+        img_list.append(srcset)
+
+    src_list = list(set(img_list))
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)" \
+                 " Chrome/77.0.3865.120 Safari/537.36"
+    session = requests.Session()
+    session.headers.update({'User-agent': user_agent, 'referer': None})
+
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+
+    for file_name, image_url in zip(url_list, src_list):
+        path = f"{save_dir}/ {file_name.split('/')[-2]}.png"
+
+        try:
+            r = session.get(image_url, stream=True)
+            if r.status_code != 200:
+                raise Exception
+
+            with open(path, 'wb') as f:
+                f.write(r.raw.read())
+                print(f"save completed : {path}")
+        except:
+            print(f"failed in {path}")
+            continue
+
+
+def instagram_unknown_crawling(target_keywords, isfeed):
     tnum = 0
     for num, target in enumerate(target_keywords):
         save_dir = '../Dataset/not_refine'
@@ -42,7 +105,6 @@ def unknown_url_crawling(target_keywords, isfeed):
             driver_dir = f"https://www.instagram.com/explore/tags/{target}"
             driver.get(driver_dir)
         time.sleep(3)
-
 
         img_list = []
         time_count = 0
@@ -140,6 +202,7 @@ class _Dict(dict):
                         return ret
                     else:
                         continue
+
         try:
             return __proxy__(self, key)
         except KeyError as e:
@@ -153,6 +216,7 @@ class _Dict(dict):
                     return True
                 if isinstance(_dict[k], _Dict):
                     return __proxy__(_dict[k], key, value)
+
         if __proxy__(self, key, value):
             return
         self[key] = value
@@ -165,6 +229,7 @@ class _Dict(dict):
                     return
                 if isinstance(_dict[k], _Dict):
                     __proxy__(_dict[k], key)
+
         try:
             __proxy__(self, key)
         except KeyError as e:
@@ -193,7 +258,7 @@ class ConfigParser(_Dict):
 def print_json(config, indent=''):
     for k, v in config.items():
         if type(config[k]) is _Dict:
-            print(indent+f'{k}:')
-            print_json(v, indent+'    ')
+            print(indent + f'{k}:')
+            print_json(v, indent + '    ')
         else:
-            print(indent+f'{k}: {v}')
+            print(indent + f'{k}: {v}')
